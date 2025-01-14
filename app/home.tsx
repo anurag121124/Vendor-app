@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -16,6 +16,8 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import vendorData from "../src/data/vendors.json";
 import VendorCard from "@/src/components/home/VendorCard";
+import MapView, { Marker } from "react-native-maps";
+import { useLocation } from "@/hooks/useLocation";
 // Core data interfaces
 import { Vendor, Category, SortConfig, FilterState } from "@/src/types";
 import { calculateDistance } from "@/src/utils/helpers";
@@ -27,21 +29,12 @@ const HEADER_PADDING_TOP = 48;
 const HEADER_PADDING_BOTTOM = 16;
 const ITEMS_PER_PAGE = 10;
 
-// Utility functions
-
-const formatPrice = (price: number): string => {
-  return `$${price.toFixed(2)}`;
-};
-
-const formatReviewCount = (count: number): string => {
-  return count >= 1000 ? `${(count / 1000).toFixed(1)}k` : count.toString();
-};
-
 const Homepage: React.FC = () => {
   // State management
   const [searchText, setSearchText] = useState<string>("");
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [currentPage, setCurrentPage] = useState<number>(1);
+
   const [filters, setFilters] = useState<FilterState>({
     rating: "all",
     distance: "all",
@@ -54,44 +47,58 @@ const Homepage: React.FC = () => {
   });
   const [showFilters, setShowFilters] = useState<boolean>(false);
   const [showSort, setShowSort] = useState<boolean>(false);
+  const [vendors, setVendors] = useState<Vendor[]>([]); // Vendor state
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
 
-  // User's current location (would typically come from a location service)
-  const userLocation = useMemo(
-    () => ({
-      lat: 37.7749,
-      lon: -122.4194,
-    }),
-    []
-  );
+  // Get user's location from the custom hook
+  const { location, error } = useLocation();
 
-  // Transform and enhance vendor data
-  const vendors: Vendor[] = useMemo(() => {
-    return vendorData.data.get_nearby_vendors.map((vendor: any) => ({
-      id: vendor.id,
-      name: vendor.name,
-      vendor_brand: vendor.vendor_brand,
-      logo: vendor.brand_logo,
-      brand_image: vendor.brand_image,
-      rating: vendor.rating,
-      category: vendor.category || "Unknown",
-      location: {
-        lat: vendor.location.coordinates[1],
-        lon: vendor.location.coordinates[0],
-      },
-      products: vendor.vendor_products.map((product: any) => product.id),
-      isOpen: vendor.is_open !== undefined ? vendor.is_open : false,
-      reviewCount: vendor.review_count || 0,
-      distance: calculateDistance(userLocation, {
-        lat: vendor.location.coordinates[1],
-        lon: vendor.location.coordinates[0],
-      }),
-      description: vendor.description,
-      delivery_time: vendor.delivery_time,
-      minimum_order: vendor.minimum_order,
-      delivery_fee: vendor.delivery_fee,
-    }));
-  }, [userLocation]);
+  // Utility functions
+  const formatPrice = (price: number): string => {
+    return `$${price.toFixed(2)}`;
+  };
+
+  const formatReviewCount = (count: number): string => {
+    return count >= 1000 ? `${(count / 1000).toFixed(1)}k` : count.toString();
+  };
+
+  useEffect(() => {
+    if (location) {
+      try {
+        const updatedVendors = vendorData.data.get_nearby_vendors.map(
+          (vendor: any) => ({
+            id: vendor.id,
+            name: vendor.name,
+            vendor_brand: vendor.vendor_brand,
+            logo: vendor.brand_logo,
+            brand_image: vendor.brand_image,
+            rating: vendor.rating || 0, // Ensure rating has a default value
+            category: vendor.category || "Unknown",
+            location: {
+              lat: vendor.location.coordinates[1],
+              lon: vendor.location.coordinates[0],
+            },
+            products:
+              vendor.vendor_products?.map((product: any) => product.id) || [],
+            isOpen: Boolean(vendor.is_open), // Convert to boolean
+            reviewCount: vendor.review_count || 0,
+            distance: calculateDistance(location, {
+              lat: vendor.location.coordinates[1],
+              lon: vendor.location.coordinates[0],
+            }),
+            description: vendor.description || "",
+            delivery_time: vendor.delivery_time || "Unknown",
+            minimum_order: vendor.minimum_order || 0,
+            delivery_fee: vendor.delivery_fee || 0,
+          })
+        );
+        setVendors(updatedVendors);
+        console.log("Vendors updated with location data");
+      } catch (err) {
+        console.error("Error processing vendor data:", err);
+      }
+    }
+  }, [location]);
 
   // Available categories
   const categories: Category[] = [
@@ -104,71 +111,60 @@ const Homepage: React.FC = () => {
 
   // Filter and sort vendors
   const filteredVendors = useMemo(() => {
-    let filtered = vendors;
+    console.log("Applying filters:", filters);
+    if (!vendors.length) return [];
 
-    // Search filter
-    if (searchText.trim()) {
-      filtered = filtered.filter((vendor) =>
-        vendor.name.toLowerCase().includes(searchText.toLowerCase())
-      );
-    }
+    return vendors
+      .filter((vendor) => {
+        // Search text filter with null checking
+        if (
+          searchText.trim() &&
+          !vendor.name.toLowerCase().includes(searchText.toLowerCase())
+        ) {
+          return false;
+        }
 
-    // Category filter
-    if (activeCategory !== "All") {
-      filtered = filtered.filter(
-        (vendor) => vendor.category === activeCategory
-      );
-    }
+        // Category filter with exact matching
+        if (activeCategory !== "All" && vendor.category !== activeCategory) {
+          return false;
+        }
 
-    // Rating filter
-    if (filters.rating !== "all") {
-      const minRating = parseFloat(filters.rating);
-      filtered = filtered.filter((vendor) => vendor.rating >= minRating);
-    }
+        // Rating filter with proper number comparison
+        if (filters.rating !== "all") {
+          const minRating = parseFloat(filters.rating);
+          if (isNaN(vendor.rating) || vendor.rating < minRating) {
+            return false;
+          }
+        }
 
-    // Distance filter
-    if (filters.distance !== "all") {
-      const maxDistance = parseFloat(filters.distance);
-      filtered = filtered.filter((vendor) => vendor.distance! <= maxDistance);
-    }
+        // Distance filter with proper number handling
+        if (filters.distance !== "all") {
+          const maxDistance = parseFloat(filters.distance);
+          if (!vendor.distance || vendor.distance > maxDistance) {
+            return false;
+          }
+        }
 
-    // Open/Closed filter
-    if (filters.isOpen) {
-      filtered = filtered.filter((vendor) => vendor.isOpen);
-    }
+        // Open status filter
+        if (filters.isOpen && !vendor.isOpen) {
+          return false;
+        }
 
-    // Sort vendors
-    filtered.sort((a, b) => {
-      const multiplier = sortConfig.direction === "asc" ? 1 : -1;
-      return ((a[sortConfig.key] ?? 0) - (b[sortConfig.key] ?? 0)) * multiplier;
-    });
-
-    return filtered;
+        return true;
+      })
+      .sort((a, b) => {
+        const multiplier = sortConfig.direction === "asc" ? 1 : -1;
+        const aValue = a[sortConfig.key] ?? 0;
+        const bValue = b[sortConfig.key] ?? 0;
+        return (aValue - bValue) * multiplier;
+      });
   }, [vendors, searchText, activeCategory, filters, sortConfig]);
 
   // Get paginated vendors
-  const paginatedVendors = useCallback((): Vendor[] => {
+  const paginatedVendors = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredVendors.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   }, [filteredVendors, currentPage]);
-
-  // Log the filtered vendors to verify data
-  // Log the filtered vendors to verify data
-  useEffect(() => {
-    console.log("Filtered Vendors:", filteredVendors);
-  }, [filteredVendors]);
-
-  // Log the paginated vendors to verify data
-  useEffect(() => {
-    console.log("Paginated Vendors:", paginatedVendors());
-  }, [paginatedVendors]);
-
-  // Event handlers
-  const handleLoadMore = () => {
-    if (paginatedVendors().length < filteredVendors.length) {
-      setCurrentPage((prevPage) => prevPage + 1);
-    }
-  };
 
   const handleSort = (key: SortConfig["key"]) => {
     setSortConfig((prev) => ({
@@ -176,14 +172,22 @@ const Homepage: React.FC = () => {
       direction: prev.key === key && prev.direction === "desc" ? "asc" : "desc",
     }));
     setShowSort(false);
+    setCurrentPage(1);
   };
 
   const handleFilter = (key: keyof FilterState, value: string | boolean) => {
+    console.log(`Applying filter: ${key} = ${value}`);
     setFilters((prev) => ({
       ...prev,
       [key]: value,
     }));
+    setCurrentPage(1); // Reset to first page when filtering
   };
+
+  useEffect(() => {
+    console.log("Current filters:", filters);
+    console.log("Filtered vendors count:", filteredVendors.length);
+  }, [filters, filteredVendors]);
 
   const resetFilters = () => {
     setFilters({
@@ -194,6 +198,14 @@ const Homepage: React.FC = () => {
     });
     setShowFilters(false);
   };
+
+  if (error) {
+    return <Text>Error: {error}</Text>;
+  }
+
+  if (!location) {
+    return <ActivityIndicator size="large" color="#0000ff" />;
+  }
 
   // Render functions
   return (
@@ -292,42 +304,43 @@ const Homepage: React.FC = () => {
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {categories.map((category) => (
               <TouchableOpacity
-          key={category.id}
-          onPress={() => {
-            setActiveCategory(category.id);
-            setCurrentPage(1);
-          }}
-          style={{
-            backgroundColor:
-              activeCategory === category.id ? "#3B82F6" : "#FFFFFF",
-            borderColor:
-              activeCategory === category.id ? "#3B82F6" : "#D1D5DB",
-            height: CATEGORY_HEIGHT,
-            minWidth: CATEGORY_MIN_WIDTH,
-            paddingHorizontal: 16,
-            paddingVertical: 8,
-            borderRadius: 24,
-            marginRight: 8,
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
-            borderWidth: 1,
-          }}
+                key={category.id}
+                onPress={() => {
+                  setActiveCategory(category.id);
+                  setCurrentPage(1);
+                }}
+                style={{
+                  backgroundColor:
+                    activeCategory === category.id ? "#3B82F6" : "#FFFFFF",
+                  borderColor:
+                    activeCategory === category.id ? "#3B82F6" : "#D1D5DB",
+                  height: CATEGORY_HEIGHT,
+                  minWidth: CATEGORY_MIN_WIDTH,
+                  paddingHorizontal: 16,
+                  paddingVertical: 8,
+                  borderRadius: 24,
+                  marginRight: 8,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderWidth: 1,
+                }}
               >
-          <Ionicons
-            name={category.icon}
-            size={18}
-            color={activeCategory === category.id ? "#FFFFFF" : "#6B7280"}
-          />
-          <Text
-            style={{
-              fontWeight: "500",
-              marginLeft: 8,
-              color: activeCategory === category.id ? "#FFFFFF" : "#6B7280",
-            }}
-          >
-            {category.id}
-          </Text>
+                <Ionicons
+                  name={category.icon}
+                  size={18}
+                  color={activeCategory === category.id ? "#FFFFFF" : "#6B7280"}
+                />
+                <Text
+                  style={{
+                    fontWeight: "500",
+                    marginLeft: 8,
+                    color:
+                      activeCategory === category.id ? "#FFFFFF" : "#6B7280",
+                  }}
+                >
+                  {category.id}
+                </Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -389,23 +402,23 @@ const Homepage: React.FC = () => {
           contentContainerStyle={{ flexGrow: 1 }}
         >
           <FlatList
-            data={vendors}
+            data={paginatedVendors} // Use paginated data instead of raw vendors
             renderItem={({ item }) => (
-              <VendorCard
-                vendor={item}
-                onPress={() => setSelectedVendor(item)}
-              />
+              <View style={{ flex: 1, margin: 2 }}>
+                <VendorCard
+                  vendor={item}
+                  onPress={() => setSelectedVendor(item)}
+                />
+              </View>
             )}
-            keyExtractor={(item, index) =>
-              item?.id?.toString() || index.toString()
-            }
-            numColumns={2} // Grid layout with 2 columns
+            keyExtractor={(item) => item.id.toString()}
+            numColumns={2}
             columnWrapperStyle={{
               justifyContent: "space-between",
-              paddingHorizontal: 8,
+              paddingHorizontal: 4, // Add padding between columns
             }}
             ListEmptyComponent={
-              <View className="flex-1 justify-center items-center py-8">
+              <View className="flex-1 justify-center items-center py-6">
                 <Ionicons name="search" size={48} color="#9CA3AF" />
                 <Text className="text-gray-500 mt-4 text-center">
                   No vendors found.{"\n"}Try adjusting your filters.
@@ -414,13 +427,27 @@ const Homepage: React.FC = () => {
             }
             contentContainerStyle={{
               paddingVertical: 16,
-              flexGrow: 1, // Ensures the FlatList expands fully within the ScrollView
+              paddingHorizontal: 2, // Ensure consistent padding around the grid
+              flexGrow: 1,
             }}
-            nestedScrollEnabled={true} // Enables nested scrolling
+            nestedScrollEnabled={true}
           />
         </ScrollView>
       </View>
       ;{/* Filter Modal */}
+      {/* Modal Start From Here
+  
+  
+  
+  
+  
+  
+  
+
+  
+  
+  
+  */}
       <Modal
         visible={showFilters}
         animationType="slide"
@@ -432,7 +459,13 @@ const Homepage: React.FC = () => {
             <View className="p-4 border-b border-gray-200">
               <View className="flex-row justify-between items-center">
                 <Text className="text-xl font-bold text-gray-900">Filters</Text>
-                <TouchableOpacity onPress={() => setShowFilters(false)}>
+                <TouchableOpacity
+                  onPress={() => {
+                    console.log("Applying filters...");
+                    setShowFilters(false);
+                    setCurrentPage(1);
+                  }}
+                >
                   <Ionicons name="close" size={24} color="#374151" />
                 </TouchableOpacity>
               </View>
@@ -683,6 +716,27 @@ const Homepage: React.FC = () => {
                       {formatPrice(selectedVendor.minimum_order || 0)}
                     </Text>
                   </View>
+                </View>
+                <View className="border-t border-gray-200 pt-4 mb-6">
+                  {/* Show map box here */}
+                  <MapView
+                    style={{ height: 200, width: "100%" }} // Adjust the height and width as needed
+                    initialRegion={{
+                      latitude: selectedVendor.location.lat, // Latitude is the second value
+                      longitude: selectedVendor.location.lon, // Longitude is the first value
+                      latitudeDelta: 0.01, // Adjust for zoom level
+                      longitudeDelta: 0.01, // Adjust for zoom level
+                    }}
+                  >
+                    <Marker
+                      coordinate={{
+                        latitude: selectedVendor.location.lat,
+                        longitude: selectedVendor.location.lon,
+                      }}
+                      title="My Location"
+                      description="This is a marker description"
+                    />
+                  </MapView>
                 </View>
               </ScrollView>
 
