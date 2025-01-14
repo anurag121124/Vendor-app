@@ -1,11 +1,17 @@
+// app/home.tsx
+
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import LoginScreen from './(auth)/login'; // Import the LoginScreen component
-
+import { useRouter } from 'expo-router';
+import LoginScreen from './(auth)/login';
+import Homepage from './home';
 export default function HomeScreen() {
+
   return (
     <View style={styles.container}>
-      <LoginScreen />
+      {/* <LoginScreen /> */}
+      <Homepage />
+      {/* You can also add other components or navigation buttons */}
     </View>
   );
 }

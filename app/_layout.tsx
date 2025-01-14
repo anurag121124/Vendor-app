@@ -5,22 +5,25 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
-import "../global.css"; // Ensure global styles are applied
+import "../global.css";
 
-import { useColorScheme } from '@/hooks/useColorScheme'; // Custom hook for color scheme
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { AuthProvider } from '@/src/context/AuthContext';
 
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {
+  console.warn('SplashScreen already hidden or unavailable.');
+});
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme(); // Get the current color scheme (dark or light)
+  const colorScheme = useColorScheme();
   const [fontsLoaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'), // Load custom font
+    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
   useEffect(() => {
     const hideSplashScreen = async () => {
       if (fontsLoaded) {
-        await SplashScreen.hideAsync(); // Hide splash screen once fonts are loaded
+        await SplashScreen.hideAsync();
       }
     };
 
@@ -28,22 +31,20 @@ export default function RootLayout() {
   }, [fontsLoaded]);
 
   if (!fontsLoaded) {
-    return null; // Return null while fonts are loading to prevent rendering before assets are ready
+    return null; // Render nothing while fonts are loading
   }
 
   return (
+    // <AuthProvider>
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack initialRouteName="index">
-        <Stack.Screen
-          name="(auth)/login"
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="index"
-          options={{ headerShown: false }}
-        />
+        {/* <Stack.Screen name="(auth)/login" options={{ headerShown: false }} /> */}
+        <Stack.Screen name = "home"options={{ headerShown: false }} />
+        <Stack.Screen name="index" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
     </ThemeProvider>
+    // </AuthProvider>
+
   );
 }
