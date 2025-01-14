@@ -23,7 +23,6 @@ const LoginScreen: React.FC = () => {
   const auth = useContext(AuthContext);
   const router = useRouter();
 
-  // Check if already logged in
   useEffect(() => {
     if (auth?.isLoggedIn) {
       router.replace("/home");
@@ -31,30 +30,26 @@ const LoginScreen: React.FC = () => {
   }, [auth?.isLoggedIn]);
 
   const validateInput = (): boolean => {
-    // Reset previous error
     setError("");
-
-    // Email validation regex
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    
+
     if (!username.trim()) {
-      setError("Please enter your username or email");
+      setError("Please enter your username or email.");
       return false;
     }
 
-    // If input is meant to be an email, validate it
     if (username.includes("@") && !emailRegex.test(username)) {
-      setError("Please enter a valid email address");
+      setError("Please enter a valid email address.");
       return false;
     }
 
     if (!password) {
-      setError("Please enter your password");
+      setError("Please enter your password.");
       return false;
     }
 
     if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+      setError("Password must be at least 6 characters.");
       return false;
     }
 
@@ -69,17 +64,16 @@ const LoginScreen: React.FC = () => {
       setError("");
 
       if (!auth?.login) {
-        throw new Error("Authentication service is unavailable");
+        throw new Error("Authentication service is unavailable.");
       }
 
+      console.log("Attempting login...");
       await auth.login(username, password);
-      
-      // Navigation is handled by useEffect when isLoggedIn changes
+      console.log("Login successful");
     } catch (err: any) {
       const errorMessage = err.message || "Invalid credentials. Please try again.";
       setError(errorMessage);
-      
-      // Show error in alert for better visibility
+      console.error("Login failed:", err);
       Alert.alert("Login Failed", errorMessage);
     } finally {
       setIsLoading(false);
@@ -128,7 +122,7 @@ const LoginScreen: React.FC = () => {
               value={username}
               onChangeText={(text) => {
                 setUsername(text);
-                setError(""); // Clear error when user types
+                setError("");
               }}
               autoCapitalize="none"
               keyboardType="email-address"
@@ -148,7 +142,7 @@ const LoginScreen: React.FC = () => {
                 value={password}
                 onChangeText={(text) => {
                   setPassword(text);
-                  setError(""); // Clear error when user types
+                  setError("");
                 }}
                 secureTextEntry={!showPassword}
                 className="p-4 border border-gray-300 rounded-lg bg-gray-50 text-lg"

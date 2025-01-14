@@ -1,50 +1,126 @@
-# Welcome to your Expo app 👋
+# Vendor Discovery App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A React Native mobile application built with Expo that helps users discover and interact with nearby vendors. The app features modern UI, real-time location-based search, and vendor information management.
 
-## Get started
+## Features
 
-1. Install dependencies
+- **Authentication**
+  - Secure login system
+  - Password management
+  - Session handling
 
-   ```bash
-   npm install
-   ```
+- **Vendor Discovery**
+  - Location-based search using [`useLocation`](hooks/useLocation.ts)
+  - Category filtering
+  - Advanced search filters (rating, distance, open status)
+  - Custom sorting options
 
-2. Start the app
+- **User Interface**
+  - Modern design with [NativeWind](tailwind.config.js)
+  - Interactive vendor cards via [`VendorCard`](src/components/home/VendorCard.tsx)
+  - Map integration using React Native Maps
+  - Loading states and error handling
 
-   ```bash
-    npx expo start
-   ```
+## Tech Stack
 
-In the output, you'll find options to open the app in a
+- Framework: [Expo](package.json) v52.0.25
+- Language: TypeScript
+- Styling: TailwindCSS/NativeWind
+- Navigation: Expo Router
+- Maps: React Native Maps
+- Location Services: Expo Location
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Project Structure
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+├── app/                  # Application routes
+│   ├── (auth)/          # Authentication screens
+│   ├── _layout.tsx      # Root layout
+│   └── home.tsx         # Main screen
+├── src/
+│   ├── api/             # API endpoints
+│   ├── components/      # UI components
+│   ├── context/         # Context providers
+│   ├── data/           # Static data
+│   ├── types/          # TypeScript types
+│   └── utils/          # Helper functions
+└── hooks/               # Custom React hooks
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Installation
 
-## Learn more
+1. Clone the repository:
+```bash
+git clone <repository-url>
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+2. Install dependencies:
+```bash
+npm install
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+3. Start the development server:
+```bash
+npx expo start
+```
 
-## Join the community
+## Development Commands
 
-Join our community of developers creating universal apps.
+```bash
+# Start the development server
+npm start
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+# Run on iOS simulator
+npm run ios
+
+# Run on Android emulator
+npm run android
+
+# Run on web
+npm run web
+
+# Run tests
+npm test
+
+# Run linting
+npm run lint
+```
+
+## Environment Setup
+
+1. Install Expo CLI:
+```bash
+npm install -g expo-cli
+```
+
+2. Install development dependencies:
+```bash
+npm install
+```
+
+3. Configure environment:
+   - Follow [Expo's environment setup guide](https://docs.expo.dev/get-started/installation/)
+   - Set up emulators/simulators as needed
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch: `git checkout -b feature/AmazingFeature`
+3. Commit your changes: `git commit -m 'Add some AmazingFeature'`
+4. Push to the branch: `git push origin feature/AmazingFeature`
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- [Expo Documentation](https://docs.expo.dev/)
+- [React Native Documentation](https://reactnative.dev/)
+- [NativeWind Documentation](https://www.nativewind.dev/)
+
+## Contact
+
+Your Name - [@anurag12112]
+Project Link: [https://github.com/anurag121124/Vendor-app](https://github.com/anurag121124/Vendor-app)

@@ -1,4 +1,4 @@
-import { createContext, useState, ReactNode } from "react";
+import React, { createContext, useState, ReactNode } from "react";
 import { API_ENDPOINTS } from "../api/endpoint";
 
 interface AuthContextProps {
@@ -28,19 +28,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         body: JSON.stringify({ username, password }),
       });
 
-      if (!response.ok) {
+      console.log("Login response status:", response.status);
+
+      if (response.ok) {
+        const userData = await response.json();
+        console.log("User data:", userData);
+
+        setUser(userData);
+        setIsLoggedIn(true);
+      } else {
         const errorData = await response.json();
+        console.error("Login failed:", errorData);
         throw new Error(errorData.message || "Login failed");
       }
-
-      const userData = await response.json();
-      setUser(userData);
-      setIsLoggedIn(true);
     } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(error.message);
-      }
-      throw new Error("An unexpected error occurred");
+      console.error("Login error:", error);
+      throw new Error(error instanceof Error ? error.message : "An unexpected error occurred");
     }
   };
 
@@ -54,4 +57,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       {children}
     </AuthContext.Provider>
   );
+};
+
+// Example usage outside of the AuthProvider
+export const useAuth = () => {
+  const context = React.useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 };

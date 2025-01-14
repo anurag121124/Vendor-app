@@ -4,14 +4,13 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import LoginScreen from './(auth)/login';
-import Homepage from './home';
 export default function HomeScreen() {
+  
+  const router = useRouter(); // Access the router to navigate programmatically
 
   return (
     <View style={styles.container}>
-      {/* <LoginScreen /> */}
-      <Homepage />
-      {/* You can also add other components or navigation buttons */}
+      <LoginScreen />
     </View>
   );
 }
