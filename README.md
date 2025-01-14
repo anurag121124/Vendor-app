@@ -121,6 +121,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [NativeWind Documentation](https://www.nativewind.dev/)
 
 ## Contact
-
-Your Name - [@anurag12112]
+ANURAG SINGH
 Project Link: [https://github.com/anurag121124/Vendor-app](https://github.com/anurag121124/Vendor-app)

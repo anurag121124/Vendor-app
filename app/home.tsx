@@ -21,6 +21,7 @@ import { useLocation } from "@/hooks/useLocation";
 // Core data interfaces
 import { Vendor, Category, SortConfig, FilterState } from "@/src/types";
 import { calculateDistance } from "@/src/utils/helpers";
+import { SafeAreaView } from "react-native-safe-area-context";
 // Layout constants
 const { width } = Dimensions.get("window");
 const CATEGORY_HEIGHT = 48;
@@ -209,6 +210,7 @@ const Homepage: React.FC = () => {
 
   // Render functions
   return (
+    
     <View style={{ flex: 1, backgroundColor: "#F3F4F6" }}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       {/* Header Section */}
@@ -418,7 +420,7 @@ const Homepage: React.FC = () => {
               paddingHorizontal: 4, // Add padding between columns
             }}
             ListEmptyComponent={
-              <View className="flex-1 justify-center items-center py-6">
+              <View className="flex-1 justify-center items-center py-6 h-full">
                 <Ionicons name="search" size={48} color="#9CA3AF" />
                 <Text className="text-gray-500 mt-4 text-center">
                   No vendors found.{"\n"}Try adjusting your filters.
